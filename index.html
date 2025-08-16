@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ヘリウム大型風船・必要個数 計算ツール</title>
+  <style>
+    :root {
+      --bg: #222831;
+      --card: #31363F;
+      --ink: #EEEEEE;
+      --muted: #cccccc;
+      --accent: #76ABAE;
+      --ring: 0 0 0 3px rgba(118,171,174,.45);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: var(--ink);
+      background: var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(880px, 100%);
+      background: var(--card);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.4);
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(20px, 4vw, 28px); }
+    p.lead { margin: 0 0 18px; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .field { grid-column: span 6; }
+    .field.full { grid-column: 1 / -1; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #222831;
+      border: 1px solid rgba(255,255,255,.15);
+      color: var(--ink);
+      font-size: 16px;
+      outline: none;
+    }
+    input:focus { box-shadow: var(--ring); border-color: var(--accent); }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    details { background: #222831; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 12px 14px; }
+    summary { cursor: pointer; font-weight: 600; }
+    .result {
+      margin-top: 18px; padding: 16px; border-radius: 14px; background: #222831; border: 1px solid rgba(255,255,255,.1);
+      display: grid; gap: 10px; grid-template-columns: 1fr 1fr; align-items: center;
+    }
+    .result .n {
+      font-size: clamp(28px, 6vw, 44px); font-weight: 800; color: var(--accent);
+    }
+    .kpis { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .kpi { background: #31363F; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 12px; }
+    .kpi .label { color: var(--muted); font-size: 12px; }
+    .kpi .value { font-weight: 700; font-size: 16px; color: var(--ink); }
+    .muted { color: var(--muted); }
+    footer { margin-top: 18px; color: var(--muted); font-size: 12px; }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: repeat(6, 1fr); }
+      .field { grid-column: span 6; }
+      .result { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>ヘリウム大型風船（1800L）の必要個数計算</h1>
+    <p class="lead">体重（kg）を入れると、中性浮力に必要な風船の最小個数を計算します。前提：安全装備は<strong>+0.5 kg</strong>、風船自重は<strong>3 g/個</strong>。環境要因は標準大気として固定。</p>
+
+    <section class="grid" aria-label="Inputs">
+      <div class="field">
+        <label for="mass">あなたの体重 (kg)</label>
+        <input id="mass" type="number" inputmode="decimal" placeholder="例：35" min="1" max="250" step="0.1" />
+        <div class="hint">小数もOK（例：35.5）。</div>
+      </div>
+      <div class="field">
+        <label for="autoupdate">自動計算</label>
+        <input id="autoupdate" type="checkbox" checked />
+        <div class="hint">オンにすると入力のたびに更新します。</div>
+      </div>
+      <div class="field full">
+        <details>
+          <summary>詳細パラメータ（必要なら変更可）</summary>
+          <div class="grid" style="margin-top:12px">
+            <div class="field">
+              <label for="Vb">風船体積 V<sub>balloon</sub> (m³)</label>
+              <input id="Vb" type="number" step="0.001" />
+            </div>
+            <div class="field">
+              <label for="menv">風船自重 m<sub>envelope</sub> (kg/個)</label>
+              <input id="menv" type="number" step="0.001" />
+            </div>
+            <div class="field">
+              <label for="rhoAir">空気密度 ρ<sub>air</sub> (kg/m³)</label>
+              <input id="rhoAir" type="number" step="0.001" />
+            </div>
+            <div class="field">
+              <label for="rhoHe">ヘリウム密度 ρ<sub>He</sub> (kg/m³)</label>
+              <input id="rhoHe" type="number" step="0.001" />
+            </div>
+            <div class="field">
+              <label for="safety">安全装備（kg）</label>
+              <input id="safety" type="number" step="0.1" />
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="result" aria-live="polite">
+      <div>
+        <div class="muted">必要最小個数（切り上げ）</div>
+        <div class="n" id="N">— 個</div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="label">風船1個の正味揚力</div><div class="value" id="L1">— kg/個</div></div>
+        <div class="kpi"><div class="label">対象の実効質量</div><div class="value" id="meff">— kg</div></div>
+        <div class="kpi"><div class="label">合計揚力</div><div class="value" id="sumLift">— kg</div></div>
+        <div class="kpi"><div class="label">余剰</div><div class="value" id="margin">— kg</div></div>
+      </div>
+    </section>
+
+    <footer>
+      <p>※ 中性浮力の理論計算です。実際の運用は危険を伴うため推奨しません。</p>
+    </footer>
+  </main>
+
+  <script>
+    const els = {
+      mass: document.getElementById('mass'),
+      Vb: document.getElementById('Vb'),
+      menv: document.getElementById('menv'),
+      rhoAir: document.getElementById('rhoAir'),
+      rhoHe: document.getElementById('rhoHe'),
+      safety: document.getElementById('safety'),
+      autoupdate: document.getElementById('autoupdate'),
+      N: document.getElementById('N'),
+      L1: document.getElementById('L1'),
+      meff: document.getElementById('meff'),
+      sumLift: document.getElementById('sumLift'),
+      margin: document.getElementById('margin'),
+    };
+
+    const defaults = { Vb: 1.8, menv: 0.003, rhoAir: 1.204, rhoHe: 0.1785, safety: 0.5 };
+    for (const k of Object.keys(defaults)) els[k].value = defaults[k];
+
+    function fmt(x, digits = 3) {
+      if (!isFinite(x)) return '—';
+      return Number(x).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+    }
+
+    function compute() {
+      const m = parseFloat(els.mass.value);
+      const Vb = parseFloat(els.Vb.value);
+      const menv = parseFloat(els.menv.value);
+      const rhoAir = parseFloat(els.rhoAir.value);
+      const rhoHe = parseFloat(els.rhoHe.value);
+      const safety = parseFloat(els.safety.value);
+
+      if (!isFinite(m) || m <= 0) {
+        els.N.textContent = '— 個';
+        els.L1.textContent = '— kg/個';
+        els.meff.textContent = '— kg';
+        els.sumLift.textContent = '— kg';
+        els.margin.textContent = '— kg';
+        return;
+      }
+
+      const L1 = (rhoAir - rhoHe) * Vb - menv;
+      const meff = (m + safety) * (1 - rhoAir / 1000);
+      const N = Math.max(0, Math.ceil(meff / L1));
+      const sum = N * L1;
+      const margin = sum - meff;
+
+      els.N.textContent = isFinite(N) ? `${fmt(N, 0)} 個` : '— 個';
+      els.L1.textContent = `${fmt(L1)} kg/個`;
+      els.meff.textContent = `${fmt(meff)} kg`;
+      els.sumLift.textContent = `${fmt(sum)} kg`;
+      els.margin.textContent = `${fmt(margin)} kg`;
+    }
+
+    ['mass','Vb','menv','rhoAir','rhoHe','safety'].forEach(id => {
+      els[id].addEventListener('input', () => {
+        if (els.autoupdate.checked) compute();
+      });
+      els[id].addEventListener('change', compute);
+    });
+    els.autoupdate.addEventListener('change', compute);
+
+    els.mass.value = 35; // 初期値設定
+    compute();
+  </script>
+</body>
+</html>
